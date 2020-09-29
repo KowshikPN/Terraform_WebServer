@@ -1,0 +1,156 @@
+Terraform
+- Developed by Hashicorp.
+- IaaC tool
+- Files saved in .tf extension.
+
+1. Create an AWS Account.
+2. Define the provider.
+    - A provider is responsible for understanding API interactions and exposing resources.
+    - plugin that allows terraform to communicate with the infrastructure provider.
+    - We use AWS provider.
+3. Setup authentication.
+    - Static credentials: storing access key and secret access key directly in main.tf
+        - Not recommended.
+provider "aws" {
+  region = "us-east-1"
+  access_key = ""
+  secret_key = ""
+}
+4. Basic Syntax to allocate resources.
+    resource "<provider> <resource_type>" "name"{
+        config options...
+        key1 = "value1"
+        key2 = "value2"
+    }
+
+Ex: Deploy ec2 instance using terraform.
+resource "aws_instance" "web" {
+  ami           = "ami-0817d428a6fb68645"
+  instance_type = "t2.micro"
+}
+
+Commands to execute:
+1. $terraform init
+    - Searches for config file(.tf file) and looks for provider details and downloads all the plugins to interact with the provider.
+
+2. $terraform plan
+    - executes a dry run of the config file to check everything is working fine before executing.
+    + --> indicates creating resources.
+    - --> indicates deleting resources.
+    ~ --> modifying the pre-existing resource.
+
+3. $terraform apply
+    - execute to allocate the resource based on the config file.
+    If we execute the above command again, then it won't create another ec2 instance.
+
+4. $terraform destroy
+    - deletes the resources that was created in AWS according to config file.
+    - Deletes entire infrastructure.
+    - To delete a specific resource in the infrastructure there is a parameter that needs to be added to this command.
+
+If we remove the resource code from terraform config file and then execute terraform apply then,
+ the resource that was removed will be destroyed in AWS.
+------------------------------------------------------------------
+Reference Resources.
+Task2: Creating VPC
+resource "aws_vpc" "first-vpc"{
+    cidr_block = "10.0.0.0/16"
+    tags = {
+        Name = "production-vpc"
+    }
+}
+
+resource "aws_subnet" "subnet-1" {
+  vpc_id     = aws_vpc.first-vpc.id   # aws_vpc --> resource, first-vpc --> vpc name created in previous step and .id --> gives id.
+  cidr_block = "10.0.1.0/24"
+
+  tags = {
+    Name = "prod-subnet"
+  }
+}
+
+--------------------------------------------------------------------------
+Terraform Files
+
+.terraform/
+    - created when terraform init is executed.
+    - have necessary plugins of the provider to execute the config.
+
+terraform.tfstate file
+    - represents the state of terraform.
+    - stores the status of all the resources that was created in the infrastructure.
+    - very important file and never mess it up.
+
+--------------------------------------------------------------------------
+Project:
+Create a custom vpc and create an instance where web server is created.
+
+Steps:
+1. Create vpc.
+2. create internet gateway.
+3. create a route table.
+4. create a subnet.
+5. Associate subnet with the route table.
+6. Create security group to allow port 22(ssh), 80(http), 443(https) 
+7. Create a Network Interface with an IP in the subnet that was created in step 4.
+8. Create a ubuntu server and install apache2.
+
+--------------------------------------------------------------------------
+Terraform Commands:
+1. $terraform state list
+    - show the list of resources.
+
+2. $terraform state show <resource_name>
+    - gives detailed info about the resource.
+
+3. $terraform output
+    - show the results of output
+
+4. $terraform refresh
+    - executes without actually deploying.
+-----------------------------------------------------------------------------
+Terraform Output:
+output <any_name> {
+    value = <provider>_<resource>.<feature_which needs to be printed>
+    } 
+Example:
+output server_ip_address {
+    value = aws_eip.one.public_ip
+} 
+Note:
+cannot print multiple values in a single output command
+----------------------------------------------------------------------------------
+Target resources
+
+To delete a specific resource, then use target flag.
+$terraform destroy -target <resource_name>
+
+To deploy a specific resource, then we can use target flag.
+$terraform apply -target <resource_name>
+Ex: terraform destroy -target aws_instance.web-server-instance
+Ex: terraform apply -target aws_instance.web-server-instance
+
+-----------------------------------------------------------------------------------
+Variables
+Synatax:
+- To declare a variable
+    variable "name" {
+        description = "optional; describes the variable" 
+        default = "optional; default value of variable"
+        type = "optional; indicates the datatype"
+    }
+
+- To initialize a value create a file called "terraform.tfvars" and mention the value for the variable.
+- To use a variable --> var.<var_name>
+
+Note:
+If a value is not assigned to  a variable, then terraform will prompt the user to enter the value at the time of execution,
+ i.e when terraform apply command is executed.
+
+We can also assign value from cli.
+But recommended method is to create a separate file for variables called as "terraform.tfvars"
+
+If we want to maintain multiple variable name files then we use a specific variable file then syntax is:
+1. create a separate file called "example_vars.tfvars"
+2. To use this file then call $terraform apply -var-file <file_name>
+    - $terraform apply -var-file example_vars.tfvars
