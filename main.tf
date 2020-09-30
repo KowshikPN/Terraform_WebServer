@@ -1,8 +1,8 @@
 
 provider "aws" {
   region = "us-east-1"
-  access_key = "AKIAIR3HFR6ZM2KCV7PA"
-  secret_key = "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"
+  access_key = ""
+  secret_key = ""
 }
 
 # Basic Syntax to allocate resources.
